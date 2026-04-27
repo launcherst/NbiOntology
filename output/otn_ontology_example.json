@@ -1,0 +1,180 @@
+{
+  "domain": "otn_resource",
+  "name_cn": "otn资源领域本体",
+  "name_en": "OtnResourceOntology",
+  "classes": {
+    "NE": {
+      "name_en": "NE",
+      "name_cn": "网元",
+      "short_name": "NEL",
+      "description": "otn资源类: 网元",
+      "data_properties": [
+        "rmUID",
+        "productName",
+        "vendor",
+        "IPAddress",
+        "hardwareVersion",
+        "softwareVersion",
+        "neType",
+        "createTime",
+        "enableAson",
+        "maintenanceStatus"
+      ]
+    },
+    "Card": {
+      "name_en": "Card",
+      "name_cn": "板卡",
+      "short_name": "CRD",
+      "description": "otn资源类: 板卡",
+      "data_properties": [
+        "rmUID",
+        "nermUID",
+        "holderrmUID",
+        "nativeName",
+        "cardType",
+        "softwareVersion",
+        "hardwareVersion",
+        "serialNumber",
+        "serviceState"
+      ]
+    }
+  },
+  "data_properties": {
+    "rmUID": {
+      "name_en": "rmUID",
+      "name_cn": "对象rmUID",
+      "data_type": "字符",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "vendor": {
+      "name_en": "vendor",
+      "name_cn": "设备供应商",
+      "data_type": "字符",
+      "required": true,
+      "example": "HW",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "productName": {
+      "name_en": "productName",
+      "name_cn": "设备型号",
+      "data_type": "字符",
+      "required": false,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "IPAddress": {
+      "name_en": "IPAddress",
+      "name_cn": "设备IP",
+      "data_type": "字符",
+      "required": false,
+      "example": "129.9.5.106",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "hardwareVersion": {
+      "name_en": "hardwareVersion",
+      "name_cn": "硬件版本",
+      "data_type": "字符",
+      "required": false,
+      "example": "VER.A",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "softwareVersion": {
+      "name_en": "softwareVersion",
+      "name_cn": "软件版本",
+      "data_type": "字符",
+      "required": false,
+      "example": "5.10.00",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "neType": {
+      "name_en": "neType",
+      "name_cn": "网元类型",
+      "data_type": "枚举",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "createTime": {
+      "name_en": "createTime",
+      "name_cn": "创建时间",
+      "data_type": "字符",
+      "required": true,
+      "example": "2023-01-01 01:02:04",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "maintenanceStatus": {
+      "name_en": "maintenanceStatus",
+      "name_cn": "网元维护态",
+      "data_type": "枚举",
+      "required": true,
+      "example": "0",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "nermUID": {
+      "name_en": "nermUID",
+      "name_cn": "所属网元",
+      "data_type": "字符",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "serialNumber": {
+      "name_en": "serialNumber",
+      "name_cn": "序列号",
+      "data_type": "字符",
+      "required": false,
+      "example": "020PRR10AB000071",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "holderrmUID": {
+      "name_en": "holderrmUID",
+      "name_cn": "板卡所属容器rmUID",
+      "data_type": "字符",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "cardType": {
+      "name_en": "cardType",
+      "name_cn": "板卡型号",
+      "data_type": "字符",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "serviceState": {
+      "name_en": "serviceState",
+      "name_cn": "单板状态",
+      "data_type": "枚举",
+      "required": true,
+      "has_enumeration": false,
+      "enumeration_values": []
+    }
+  },
+  "enumerations": {
+    "端口速率": [
+      "1G",
+      "GE",
+      "10G",
+      "10GE",
+      "40G",
+      "40GE",
+      "100G",
+      "100GE",
+      "200G",
+      "200GE",
+      "300G",
+      "400G",
+      "400GE"
+    ]
+  }
+}
