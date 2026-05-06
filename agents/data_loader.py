@@ -55,11 +55,11 @@ class DataLoaderAgent:
         for _, row in df.dropna(
             subset=["资源对象中文名称", "资源对象英文名称"]
         ).iterrows():
-            cn_name = str(row["资源对象中文名称"]).strip()
-            en_name = str(row["资源对象英文名称"]).strip()
+            cls_name_cn = str(row["资源对象中文名称"]).strip()
+            cls_name_en = str(row["资源对象英文名称"]).strip()
             short_name = str(row["资源对象简称"]).strip()
 
-            self.resource_map[cn_name] = {"en_name": en_name, "short_name": short_name}
+            self.resource_map[cls_name_cn] = {"cls_name_en": cls_name_en, "short_name": short_name}
 
     def _extract_cn_name(self, sheet_name: str) -> str:
         """
@@ -96,14 +96,14 @@ class DataLoaderAgent:
                 continue
 
             # 提取纯中文名称
-            cn_name = self._extract_cn_name(sheet_name)
+            cls_name_cn = self._extract_cn_name(sheet_name)
 
             # 必须在资源清单中存在才加载
-            if cn_name not in self.resource_map:
+            if cls_name_cn not in self.resource_map:
                 continue
 
             # 获取 英文名称（最终用这个做key）
-            en_name = self.resource_map[cn_name]["en_name"]
+            cls_name_en = self.resource_map[cls_name_cn]["cls_name_en"]
 
             # 读取属性
             try:
@@ -130,33 +130,42 @@ class DataLoaderAgent:
                 attr_list.append(attr)
 
             # ✅ 最终以【资源对象英文名称】为 key 存储
-            self.resource_attributes[en_name] = attr_list
+            self.resource_attributes[cls_name_en] = attr_list
 
     def _load_enum_dictionary(self):
-        """加载【字典表】sheet: 枚举值定义"""
+        """
+        加载【字典表】sheet: 枚举值定义
+        构建枚举字典，结构如下：
+        资源对象英文名称 → 属性英文名称 → [{value, desc}, ...]
+        """
         df = pd.read_excel(self.excel_path, sheet_name="字典表")
-        df = df.dropna(subset=["字段名称", "取值"])
+        df = df.dropna(subset=["资源对象英文名称", "备注"])
 
-        enum_map = {}
+        enum_map: Dict[str, Dict[str, List[Dict]]] = {}  # 资源对象 → 属性 → 枚举列表
         for _, row in df.iterrows():
-            # 字段名称 = 对应 resource_attributes 中的属性名
-            attr_name_cn = str(row["字段名称"]).strip()
-
-            # 枚举值（该属性的一个可选值）
+            cls_name_en = str(row["资源对象英文名称"]).strip()
+            attr_name_en = str(row["属性英文名称"]).strip()
+            attr_name_cn = str(row["属性中文名称"]).strip()
             value = str(row["取值"]).strip()
-            # desc = str(row["备注"]).strip()
+            desc = str(row["备注"]).strip()
 
-            # 如果该字段还没有存入字典，先初始化空字典
-            if attr_name_cn not in enum_map:
-                enum_map[attr_name_cn] = []
+            # 层级1: 资源对象英文名称 -> 属性英文名称
+            if cls_name_en not in enum_map:
+                enum_map[cls_name_en] = {}
+            # 层级2: 属性英文名称 -> 枚举列表
+            if attr_name_en not in enum_map[cls_name_en]:
+                enum_map[cls_name_en][attr_name_en] = []
 
-            # 把 枚举值 → 枚举说明 存入对应字段的映射里
-            enum_map[attr_name_cn].append(value)
+            # 添加枚举值
+            enum_map[cls_name_en][attr_name_en].append({"value": value, "desc": desc})
 
         self.enum_dictionary = enum_map
 
     def _get_standard_output(self) -> Dict[str, Any]:
-        """构建流水线标准输出格式"""
+        """
+        构建流水线标准输出格式
+        枚举字典按「资源对象英文名称→属性英文名称→枚举列表」层级返回
+        """
         return {
             "resource_en_names": list(
                 self.resource_attributes.keys()
