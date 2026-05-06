@@ -1,0 +1,302 @@
+{
+  "domain": "otn_resource",
+  "name_cn": "otn资源领域本体",
+  "name_en": "OtnResourceOntology",
+  "classes": {
+    "NE": {
+      "name_en": "NE",
+      "name_cn": "网元",
+      "short_name": "NEL",
+      "description": "otn资源类: 网元",
+      "data_properties": [
+        "rmUID",
+        "nativeName",
+        "location",
+        "productName",
+        "vendor",
+        "role"
+      ]
+    },
+    "Card": {
+      "name_en": "Card",
+      "name_cn": "板卡",
+      "short_name": "CRD",
+      "description": "otn资源类: 板卡",
+      "data_properties": [
+        "rmUID",
+        "nermUID",
+        "nativeName"
+      ]
+    },
+    "Port": {
+      "name_en": "Port",
+      "name_cn": "端口",
+      "short_name": "PRT",
+      "description": "otn资源类: 端口",
+      "data_properties": [
+        "rmUID",
+        "cardrmUID",
+        "portNo",
+        "nativeName",
+        "portRate"
+      ]
+    },
+    "TopoLink": {
+      "name_en": "TopoLink",
+      "name_cn": "拓扑",
+      "short_name": "TPL",
+      "description": "otn资源类: 拓扑",
+      "data_properties": [
+        "rmUID",
+        "nativeName",
+        "aEndNermUID",
+        "zEndNermUID",
+        "aEndPortrmUID",
+        "zEndPortrmUID"
+      ]
+    }
+  },
+  "data_properties": {
+    "rmUID": {
+      "name_en": "rmUID",
+      "name_cn": "拓扑连接rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "nativeName": {
+      "name_en": "nativeName",
+      "name_cn": "本地名称",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "location": {
+      "name_en": "location",
+      "name_cn": "物理位置",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "HE-SJZ\nBJ-BJ-西城\nBJ-BJ-XICHENG",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "productName": {
+      "name_en": "productName",
+      "name_cn": "设备型号",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "OptiX OSN 8800",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "vendor": {
+      "name_en": "vendor",
+      "name_cn": "设备供应商",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "HW",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "role": {
+      "name_en": "role",
+      "name_cn": "角色",
+      "data_type": "枚举",
+      "required": true,
+      "description": "",
+      "example": "OLA",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "nermUID": {
+      "name_en": "nermUID",
+      "name_cn": "所属网元rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "cardrmUID": {
+      "name_en": "cardrmUID",
+      "name_cn": "所属板卡rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "portNo": {
+      "name_en": "portNo",
+      "name_cn": "端口序号",
+      "data_type": "数字",
+      "required": true,
+      "description": "",
+      "example": "1",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "portRate": {
+      "name_en": "portRate",
+      "name_cn": "端口速率",
+      "data_type": "枚举",
+      "required": true,
+      "description": "",
+      "example": "10G",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "aEndNermUID": {
+      "name_en": "aEndNermUID",
+      "name_cn": "连接起点网元rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "zEndNermUID": {
+      "name_en": "zEndNermUID",
+      "name_cn": "连接终点网元rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "aEndPortrmUID": {
+      "name_en": "aEndPortrmUID",
+      "name_cn": "连接起点端口rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "zEndPortrmUID": {
+      "name_en": "zEndPortrmUID",
+      "name_cn": "连接终点端口rmUID",
+      "data_type": "字符",
+      "required": true,
+      "description": "",
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    }
+  },
+  "rel_properties": {},
+  "enumerations": {
+    "NE": {
+      "role": [
+        {
+          "value": "OTM",
+          "desc": "Optical Terminal Multiplexing"
+        },
+        {
+          "value": "OLA",
+          "desc": "optical Line Amplifier"
+        },
+        {
+          "value": "OADM",
+          "desc": "Optical Add & Drop Multiplexing"
+        },
+        {
+          "value": "OXC",
+          "desc": "Optical Cross Connect"
+        }
+      ]
+    },
+    "Port": {
+      "portRate": [
+        {
+          "value": "10G",
+          "desc": "STM64、odu2、ODU2e、OTU2、10GbE-WAN、ODU1f、10GE_LAN、STM64再生段、FC-1200(10G)、1xIB QDR、CPRI选项7、CPRI选项8、OTU2e、OTU1f、oduflex N=8"
+        },
+        {
+          "value": "10GE",
+          "desc": "10GE"
+        },
+        {
+          "value": "40G",
+          "desc": "STM256、odu3、ODU3e1、ODU3e2、OTU3、STM256再生段、OTU3、OTU3e1、OTU3e2"
+        },
+        {
+          "value": "40GE",
+          "desc": "40GE"
+        },
+        {
+          "value": "100G",
+          "desc": "odu4、OTU4、ODUC1、OTUC1"
+        },
+        {
+          "value": "100GE",
+          "desc": "100GE"
+        },
+        {
+          "value": "200G",
+          "desc": "ODUC2、OTUC2"
+        },
+        {
+          "value": "200GE",
+          "desc": "200GE"
+        },
+        {
+          "value": "300G",
+          "desc": "ODUC3、OTUC3"
+        },
+        {
+          "value": "400G",
+          "desc": "OTUC4"
+        },
+        {
+          "value": "400GE",
+          "desc": "400GE"
+        },
+        {
+          "value": "nan",
+          "desc": "表示不关注"
+        },
+        {
+          "value": "Other",
+          "desc": "不在上述列表里的速率值，填其速率值，单位K或者M或者G，例如：25G、20M、64K\n注：当填写数字类型的字符时，默认单位为G。"
+        }
+      ]
+    }
+  },
+  "object_properties": {
+    "belongToDevice": {
+      "name_cn": "归属于设备",
+      "domain": "Board",
+      "range": "Device"
+    },
+    "belongToBoard": {
+      "name_cn": "归属于板卡",
+      "domain": "Port",
+      "range": "Board"
+    },
+    "containsSubnetConnection": {
+      "name_cn": "包含子网连接",
+      "domain": "LightPath",
+      "range": "SubnetConnection"
+    },
+    "hasOrder": {
+      "name_cn": "拥有顺序号",
+      "domain": "SubnetConnection",
+      "range": "Literal"
+    }
+  }
+}
