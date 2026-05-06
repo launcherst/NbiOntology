@@ -10,7 +10,7 @@ from pathlib import Path
 
 class OntologyGenerator:
     """
-    电信领域本体生成器
+    otn领域本体生成器
     输入: DataLoaderAgent 输出的标准化数据
     输出：结构化本体（类、数据属性、枚举约束、本体字典/JSON/OWL文本)
     """
@@ -42,16 +42,16 @@ class OntologyGenerator:
 
     def _generate_classes(self):
         """生成本体类（资源对象 = 本体类）"""
-        for cn_name, info in self.resource_map.items():
-            en_name = info["en_name"]
+        for cls_name_cn, info in self.resource_map.items():
+            cls_name_en = info["cls_name_en"]
             short_name = info["short_name"]
 
             # 类结构：英文类名作为key
-            self.ontology["classes"][en_name] = {
-                "name_en": en_name,
-                "name_cn": cn_name,
+            self.ontology["classes"][cls_name_en] = {
+                "name_en": cls_name_en,
+                "name_cn": cls_name_cn,
                 "short_name": short_name,
-                "description": f"otn资源类: {cn_name}",
+                "description": f"otn资源类: {cls_name_cn}",
                 "data_properties": [],  # 该类拥有的数据属性列表
             }
 
