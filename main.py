@@ -3,8 +3,10 @@
 # @datetime: 2026/04/26 21:03 UTC+8
 # @version: 0.0.1
 
+from operator import ge
+
 from agents.data_loader import DataLoaderAgent
-from agents.ontology_generator import OntologyGeneratorAgent
+from agents.ontology_generator import OntologyGenerator
 from agents.extractor import EntityRelationExtractorAgent
 from agents.fusion import KnowledgeFusionAgent
 from agents.kg_builder import KGConstructorAgent
@@ -13,8 +15,8 @@ from agents.storage import StorageAgent
 # ======================
 # 1. 配置项
 # ======================
-EXCEL_PATH = "data/资源数据模型.xlsx"
-OWL_OUTPUT = "output/telecom_resource.owl"
+EXCEL_PATH = "data/NbiExampleOtnResources.xlsx"
+OWL_OUTPUT = "output/OtnResources.owl"
 NEO4J_URI = "bolt://localhost:7687"
 NEO4J_AUTH = ("neo4j", "password")
 
@@ -24,14 +26,23 @@ NEO4J_AUTH = ("neo4j", "password")
 if __name__ == "__main__":
     # 1. 加载 Excel 资源模型
     loader = DataLoaderAgent(EXCEL_PATH)
-    classes, attributes, relations, enums = loader.load()
+    standard_data = loader.load_all()
 
     # 2. 自动生成 Ontology (OWL)
-    ontology = OntologyGeneratorAgent.generate(classes, attributes, relations, enums)
-    ontology.save(OWL_OUTPUT)
+    generator = OntologyGenerator(standard_data)
+    ontology = generator.generate_ontology()
+    # ontology.save(OWL_OUTPUT)
 
-    # 3. 自动抽取实体 + 关系
-    extractor = EntityRelationExtractorAgent(classes, attributes, relations)
+    # 3. 输出结果
+    generator.print_ontology_summary()  # 打印概览
+    generator.to_json()  # 保存为JSON本体文件
+
+    # 可选：输出OWL格式文本
+    owl_text = generator.to_owl_text()
+    print(owl_text)
+
+    # 4. 自动抽取实体 + 关系
+    extractor = EntityRelationExtractorAgent(standard_data)
     entities, relations_triples = extractor.extract()
 
     # 4. 知识融合（对齐/去重）
