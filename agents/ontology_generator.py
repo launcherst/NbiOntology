@@ -63,31 +63,36 @@ class OntologyGenerator:
                 continue
 
             # 遍历该类的所有属性
-            for attr in attrs:
-                prop_en = attr["name_en"]
-                prop_cn = attr["name_cn"]
+            for label in attrs:
+                attr = attrs[label]
 
                 # 1. 把属性加入类的属性列表
-                self.ontology["classes"][class_en]["data_properties"].append(prop_en)
+                self.ontology["classes"][class_en]["data_properties"].append(label)
 
                 # 2. 构建全局数据属性定义
-                self.ontology["data_properties"][prop_en] = {
-                    "name_en": prop_en,
-                    "name_cn": prop_cn,
-                    "data_type": attr["type"],
+                self.ontology["data_properties"][class_en + '_' + label] = {
+                    "label": label, # rdfs:label
+                    "domain": class_en, # rdfs:domain
+                    "range": attr["type"], # rdfs:range, TODO: integer, string, but enum should also be treated as string
+                    "comment": attr["desc"], # rdfs:comment
+                    "propertyType": attr["type"], #ont:propertyType and if has_enumeration then also ont:enumerationValues
+
+                    # extended info for downstream usage
+                    "name_cn": attr["name_cn"],
                     "required": attr["required"],
-                    "description": attr["desc"],
                     "example": attr["example"],
-                    "has_enumeration": prop_cn
-                    in self.enum_dictionary,  # 是否是枚举属性
-                    "enumeration_values": self.enum_dictionary.get(prop_cn, []),
+                    "has_enumeration": class_en in self.enum_dictionary and label in self.enum_dictionary[class_en],
+                    "enumeration_values": [enum["value"] for enum in self.enum_dictionary.get(class_en, {}).get(label, [])],
                 }
 
     # ============================
     # 【核心新增】定义类之间的关联关系
     # ============================
     def _generate_rel_properties(self):
-        """定义对象属性（类与类之间的关联关系）"""
+        """
+        define object properties (relationships between classes)
+        TODO: currently hardcoded, can be enhanced to auto-discover relationships based on data or naming patterns
+        """
         object_props = {
             # 格式：
             # "属性英文名": {
@@ -96,28 +101,22 @@ class OntologyGenerator:
             #   "range": 值域（指向哪个类）
             # }
             # 板卡 归属于 设备
-            "belongToDevice": {
+            "belongToNE": {
                 "name_cn": "归属于设备",
-                "domain": "Board",
-                "range": "Device",
+                "domain": "Card",
+                "range": "NE",
             },
             # 端口 归属于 板卡
-            "belongToBoard": {
+            "belongToCard": {
                 "name_cn": "归属于板卡",
                 "domain": "Port",
-                "range": "Board",
+                "range": "Card",
             },
-            # 光波道 包含 子网连接
-            "containsSubnetConnection": {
-                "name_cn": "包含子网连接",
-                "domain": "LightPath",
-                "range": "SubnetConnection",
-            },
-            # 子网连接 有顺序号
-            "hasOrder": {
-                "name_cn": "拥有顺序号",
-                "domain": "SubnetConnection",
-                "range": "Literal",  # 数值属性
+            # 拓扑连接 连接到 端口
+            "connectToPort": {
+                "name_cn": "连接到端口",
+                "domain": "TopoLink",
+                "range": "Port",
             },
         }
 
@@ -127,12 +126,77 @@ class OntologyGenerator:
         """返回本体字典结构"""
         return self.ontology
 
-    def to_json(self, save_path: str = "otn_ontology.json"):
+    def to_json(self, save_path: str = "output/otn_ontology_test.json"):
         """保存本体为 JSON 文件（可直接用于后续建模、图谱、知识库）"""
         save_path = Path(save_path)
         with open(save_path, "w", encoding="utf-8") as f:
             json.dump(self.ontology, f, ensure_ascii=False, indent=2)
         print(f"✅ 本体 JSON 已保存至：{save_path}")
+
+    def to_rdf(self, save_path: str = "output/otn_ontology_test.rdf"):
+        """【可选】生成 RDF/Turtle 格式的本体文本（适合语义网工具）"""
+        # 这里可以根据需要实现 RDF/Turtle 格式的输出
+        rdf_content = []
+        rdf_content.append(f'<?xml version="1.0" encoding="UTF-8"?>')
+        rdf_content.append(f'<rdf:RDF')
+        rdf_content.append(f'    xml:base="http://example.org/ontology/otn-ontology/"')
+        rdf_content.append(f'    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"')
+        rdf_content.append(f'    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"')
+        rdf_content.append(f'    xmlns:owl="http://www.w3.org/2002/07/owl#"')
+        rdf_content.append(f'    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"')
+        rdf_content.append(f'    xmlns:ont="http://example.org/ontology/otn-ontology#">')
+        rdf_content.append(f'')
+
+        # 写入类定义
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- Entity Types (Classes) -->')
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'')
+        for cls_en, cls_info in self.ontology["classes"].items():
+            rdf_content.append(f'    <owl:Class rdf:about="http://example.org/ontology/otn-ontology#{cls_en}">')
+            rdf_content.append(f'        <rdfs:label>{cls_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <ont:shortName>{cls_info["short_name"]}</ont:shortName>')
+            rdf_content.append(f'        <rdfs:comment>{cls_info["description"]}</rdfs:comment>')
+            rdf_content.append(f'    </owl:Class>')
+
+        # 写入数据属性定义
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- Data Properties -->')
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'')
+        for prop_en, prop_info in self.ontology["data_properties"].items():
+            rdf_content.append(f'    <owl:DatatypeProperty rdf:about="http://example.org/ontology/otn-ontology#{prop_en}">')
+            rdf_content.append(f'        <rdfs:label>{prop_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:domain rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["domain"]}"/>')
+            rdf_content.append(f'        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#{prop_info["range"]}"/>')
+            rdf_content.append(f'        <rdfs:comment>{prop_info["comment"]}</rdfs:comment>')
+            if prop_info["has_enumeration"]:
+                enum_values = " | ".join(prop_info["enumeration_values"])
+                rdf_content.append(f'        <ont:enumerationValues>{enum_values}</ont:enumerationValues>')
+            rdf_content.append(f'    </owl:DatatypeProperty>')
+
+        # 写入对象属性定义
+        """
+        TODO: bug fixing needed here, currently the domain and range are not correctly linked to the class URIs, need to ensure they point to the correct class definitions in RDF
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- Object Properties -->')
+        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'')
+        for prop_en, prop_info in self.ontology["object_properties"].items():
+            rdf_content.append(f'    <owl:ObjectProperty rdf:about="http://example.org/ontology/otn-ontology#{prop_en}">')
+            rdf_content.append(f'        <rdfs:label>{prop_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:domain rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["domain"]}"/>')
+            rdf_content.append(f'        <rdfs:range rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["range"]}"/>')
+            rdf_content.append(f'        <rdfs:comment>{prop_info["comment"]}</rdfs:comment>')
+            rdf_content.append(f'    </owl:ObjectProperty>')
+        """
+
+        rdf_content.append(f'</rdf:RDF>')
+        rdf_content.append(f'')
+        
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write('\n'.join(rdf_content))
+        print(f"✅ 本体 RDF 已保存至：{save_path}")
 
     def to_owl_text(self) -> str:
         """生成简易 OWL 本体文本（可导入 Protegé 等本体工具）"""
@@ -145,7 +209,7 @@ class OntologyGenerator:
         ]
 
         # 写入类
-        owl_lines.append("  <!-- 电信资源类 -->")
+        owl_lines.append("  <!-- otn资源类 -->")
         for cls_en, cls_info in self.ontology["classes"].items():
             owl_lines.extend(
                 [
