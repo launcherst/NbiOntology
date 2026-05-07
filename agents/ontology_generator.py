@@ -48,11 +48,13 @@ class OntologyGenerator:
 
             # 类结构：英文类名作为key
             self.ontology["classes"][cls_name_en] = {
-                "name_en": cls_name_en,
-                "name_cn": cls_name_cn,
-                "short_name": short_name,
-                "description": f"otn资源类: {cls_name_cn}",
+                "label": cls_name_en, # rdfs:label
+                "short_name": short_name, # ont:shortName
+                "comment": f"otn资源类: {cls_name_cn}", # rdfs:comment
                 "data_properties": [],  # 该类拥有的数据属性列表
+
+                # extended info for downstream usage
+                "name": cls_name_cn, # rdfs:name
             }
 
     def _generate_data_properties(self):
@@ -78,7 +80,7 @@ class OntologyGenerator:
                     "propertyType": attr["type"], #ont:propertyType and if has_enumeration then also ont:enumerationValues
 
                     # extended info for downstream usage
-                    "name_cn": attr["name_cn"],
+                    "name": attr["name_cn"],
                     "required": attr["required"],
                     "example": attr["example"],
                     "has_enumeration": class_en in self.enum_dictionary and label in self.enum_dictionary[class_en],
@@ -96,27 +98,35 @@ class OntologyGenerator:
         object_props = {
             # 格式：
             # "属性英文名": {
-            #   "name_cn": 中文名,
-            #   "domain": 定义域（从哪个类出发）,
-            #   "range": 值域（指向哪个类）
+            #   "label": 属性名称, # rdfs:label
+            #   "domain": 定义域（从哪个类出发）, # rdfs:domain
+            #   "range": 值域（指向哪个类）， # rdfs:range
+            #   "comment": 关系描述, # rdfs:comment
+            #   "cardinality": 关系的基数（如1..1, 0..*, 1..*等） # ont:cardinality
             # }
             # 板卡 归属于 设备
-            "belongToNE": {
-                "name_cn": "归属于设备",
-                "domain": "Card",
-                "range": "NE",
+            "NE_has_Card": {
+                "label": "has_Card",
+                "domain": "NE",
+                "range": "Card",
+                "comment": "NE has one or more Cards",
+                "cardinality": "1..*", # 1对多关系
             },
             # 端口 归属于 板卡
-            "belongToCard": {
-                "name_cn": "归属于板卡",
-                "domain": "Port",
-                "range": "Card",
+            "Card_has_Port": {
+                "label": "has_Port",
+                "domain": "Card",
+                "range": "Port",
+                "comment": "Card has one or more Ports",
+                "cardinality": "1..*", # 1对多关系
             },
             # 拓扑连接 连接到 端口
-            "connectToPort": {
-                "name_cn": "连接到端口",
+            "TopoLink_connects_Port": {
+                "label": "connects_Port",
                 "domain": "TopoLink",
                 "range": "Port",
+                "comment": "TopoLink connects to two Ports",
+                "cardinality": "2", # 1对2关系
             },
         }
 
@@ -147,49 +157,58 @@ class OntologyGenerator:
         rdf_content.append(f'    xmlns:ont="http://example.org/ontology/otn-ontology#">')
         rdf_content.append(f'')
 
+        rdf_content.append(f'    <owl:Ontology rdf:about="http://example.org/ontology/otn-ontology/">')
+        rdf_content.append(f'        <rdfs:label>otn ontology</rdfs:label>')
+        rdf_content.append(f'        <rdfs:comment>Generated ontology for otn resources</rdfs:comment>')
+        rdf_content.append(f'    </owl:Ontology>')
+        rdf_content.append(f'')
+
         # 写入类定义
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- ====================== -->')
         rdf_content.append(f'    <!-- Entity Types (Classes) -->')
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- ====================== -->')
         rdf_content.append(f'')
         for cls_en, cls_info in self.ontology["classes"].items():
             rdf_content.append(f'    <owl:Class rdf:about="http://example.org/ontology/otn-ontology#{cls_en}">')
-            rdf_content.append(f'        <rdfs:label>{cls_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:label>{cls_en}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:name>{cls_info["name"]}</rdfs:name>')
             rdf_content.append(f'        <ont:shortName>{cls_info["short_name"]}</ont:shortName>')
-            rdf_content.append(f'        <rdfs:comment>{cls_info["description"]}</rdfs:comment>')
+            rdf_content.append(f'        <rdfs:comment>{cls_info["comment"]}</rdfs:comment>')
             rdf_content.append(f'    </owl:Class>')
+        rdf_content.append(f'')
 
         # 写入数据属性定义
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- =============== -->')
         rdf_content.append(f'    <!-- Data Properties -->')
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- =============== -->')
         rdf_content.append(f'')
         for prop_en, prop_info in self.ontology["data_properties"].items():
             rdf_content.append(f'    <owl:DatatypeProperty rdf:about="http://example.org/ontology/otn-ontology#{prop_en}">')
-            rdf_content.append(f'        <rdfs:label>{prop_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:label>{prop_en}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:name>{prop_info["name"]}</rdfs:name>')
             rdf_content.append(f'        <rdfs:domain rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["domain"]}"/>')
             rdf_content.append(f'        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#{prop_info["range"]}"/>')
             rdf_content.append(f'        <rdfs:comment>{prop_info["comment"]}</rdfs:comment>')
             if prop_info["has_enumeration"]:
-                enum_values = " | ".join(prop_info["enumeration_values"])
-                rdf_content.append(f'        <ont:enumerationValues>{enum_values}</ont:enumerationValues>')
+                enum_values = ",".join(prop_info["enumeration_values"])
+                rdf_content.append(f'        <ont:enumValues>{enum_values}</ont:enumValues>')
             rdf_content.append(f'    </owl:DatatypeProperty>')
+        rdf_content.append(f'')
 
         # 写入对象属性定义
-        """
-        TODO: bug fixing needed here, currently the domain and range are not correctly linked to the class URIs, need to ensure they point to the correct class definitions in RDF
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- ================= -->')
         rdf_content.append(f'    <!-- Object Properties -->')
-        rdf_content.append(f'    <!-- ================ -->')
+        rdf_content.append(f'    <!-- ================= -->')
         rdf_content.append(f'')
+        # TODO: if the Object Property contains some other info like fromEntity, it should also be added to the RDF output
         for prop_en, prop_info in self.ontology["object_properties"].items():
             rdf_content.append(f'    <owl:ObjectProperty rdf:about="http://example.org/ontology/otn-ontology#{prop_en}">')
-            rdf_content.append(f'        <rdfs:label>{prop_info["name_cn"]}</rdfs:label>')
+            rdf_content.append(f'        <rdfs:label>{prop_en}</rdfs:label>')
             rdf_content.append(f'        <rdfs:domain rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["domain"]}"/>')
             rdf_content.append(f'        <rdfs:range rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["range"]}"/>')
             rdf_content.append(f'        <rdfs:comment>{prop_info["comment"]}</rdfs:comment>')
+            rdf_content.append(f'        <ont:cardinality>{prop_info["cardinality"]}</ont:cardinality>')
             rdf_content.append(f'    </owl:ObjectProperty>')
-        """
 
         rdf_content.append(f'</rdf:RDF>')
         rdf_content.append(f'')
@@ -256,4 +275,4 @@ class OntologyGenerator:
                 print("...")
                 break
             prop_count = len(cls_info["data_properties"])
-            print(f"🔹 类：{cls_en} | {cls_info['name_cn']} | 属性数：{prop_count}")
+            print(f"🔹 类：{cls_en} | {cls_info['name']} | 属性数：{prop_count}")
