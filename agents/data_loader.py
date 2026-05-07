@@ -107,20 +107,6 @@ class DataLoaderAgent:
             # 解析属性列表
             attributes = {}
             for _, row in df.iterrows():
-                """
-                attr = {
-                    "name_en": str(row["属性英文名称"]).strip(),
-                    "name_cn": str(row["属性中文名称"]).strip(),
-                    "type": str(row["字符类型"]).strip(),
-                    "required": str(row["是否必填"]).strip() == "是",
-                    "desc": (
-                        str(row["取值范围及说明"]).strip()
-                        if pd.notna(row["取值范围及说明"])
-                        else ""
-                    ),
-                    "example": str(row["数据示例"]).strip(),
-                }
-                """
                 attributes.update({
                     str(row.get("属性英文名称", "")).strip(): {
                         "name_cn": str(row.get("属性中文名称", "")).strip(),
