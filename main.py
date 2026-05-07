@@ -36,6 +36,7 @@ if __name__ == "__main__":
     # 3. 输出结果
     generator.print_ontology_summary()  # 打印概览
     generator.to_json()  # 保存为JSON本体文件
+    generator.to_rdf() # 保存为RDF文件
 
     # 可选：输出OWL格式文本
     owl_text = generator.to_owl_text()
@@ -57,4 +58,4 @@ if __name__ == "__main__":
     storage = StorageAgent(NEO4J_URI, NEO4J_AUTH)
     storage.save_to_neo4j(kg)
 
-    print("✅ 电信资源知识图谱构建完成！")
+    print("✅ OTN资源知识图谱构建完成！")
