@@ -213,6 +213,8 @@ class OntologyGenerator:
         rdf_content.append(f'</rdf:RDF>')
         rdf_content.append(f'')
         
+        # TODO: 可以考虑使用专业的 RDF 库（如 rdflib）来生成更规范的 RDF 输出，目前这里是简化实现
+        # TODO: 改为流式写入文件，避免内存占用过大
         with open(save_path, "w", encoding="utf-8") as f:
             f.write('\n'.join(rdf_content))
         print(f"✅ 本体 RDF 已保存至：{save_path}")
