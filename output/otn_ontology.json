@@ -10,15 +10,11 @@
       "description": "otn资源类: 网元",
       "data_properties": [
         "rmUID",
+        "nativeName",
+        "location",
         "productName",
         "vendor",
-        "IPAddress",
-        "hardwareVersion",
-        "softwareVersion",
-        "neType",
-        "createTime",
-        "enableAson",
-        "maintenanceStatus"
+        "role"
       ]
     },
     "Card": {
@@ -29,152 +25,392 @@
       "data_properties": [
         "rmUID",
         "nermUID",
-        "holderrmUID",
+        "nativeName"
+      ]
+    },
+    "Port": {
+      "name_en": "Port",
+      "name_cn": "端口",
+      "short_name": "PRT",
+      "description": "otn资源类: 端口",
+      "data_properties": [
+        "rmUID",
+        "cardrmUID",
+        "portNo",
         "nativeName",
-        "cardType",
-        "softwareVersion",
-        "hardwareVersion",
-        "serialNumber",
-        "serviceState"
+        "portRate"
+      ]
+    },
+    "TopoLink": {
+      "name_en": "TopoLink",
+      "name_cn": "拓扑",
+      "short_name": "TPL",
+      "description": "otn资源类: 拓扑",
+      "data_properties": [
+        "rmUID",
+        "nativeName",
+        "aEndNermUID",
+        "zEndNermUID",
+        "aEndPortrmUID",
+        "zEndPortrmUID"
       ]
     }
   },
   "data_properties": {
-    "rmUID": {
-      "name_en": "rmUID",
-      "name_cn": "对象rmUID",
-      "data_type": "字符",
+    "NE_rmUID": {
+      "label": "rmUID",
+      "domain": "NE",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "网元rmUID",
       "required": true,
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "vendor": {
-      "name_en": "vendor",
+    "NE_nativeName": {
+      "label": "nativeName",
+      "domain": "NE",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "本地名称",
+      "required": true,
+      "example": "N-XX-哈市-京沈哈/OF2.5-1-AL-ADM2.5G-1",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "NE_location": {
+      "label": "location",
+      "domain": "NE",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "物理位置",
+      "required": true,
+      "example": "HE-SJZ\nBJ-BJ-西城\nBJ-BJ-XICHENG",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "NE_productName": {
+      "label": "productName",
+      "domain": "NE",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "设备型号",
+      "required": true,
+      "example": "OptiX OSN 8800",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "NE_vendor": {
+      "label": "vendor",
+      "domain": "NE",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
       "name_cn": "设备供应商",
-      "data_type": "字符",
       "required": true,
       "example": "HW",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "productName": {
-      "name_en": "productName",
-      "name_cn": "设备型号",
-      "data_type": "字符",
-      "required": false,
-      "has_enumeration": false,
-      "enumeration_values": []
-    },
-    "IPAddress": {
-      "name_en": "IPAddress",
-      "name_cn": "设备IP",
-      "data_type": "字符",
-      "required": false,
-      "example": "129.9.5.106",
-      "has_enumeration": false,
-      "enumeration_values": []
-    },
-    "hardwareVersion": {
-      "name_en": "hardwareVersion",
-      "name_cn": "硬件版本",
-      "data_type": "字符",
-      "required": false,
-      "example": "VER.A",
-      "has_enumeration": false,
-      "enumeration_values": []
-    },
-    "softwareVersion": {
-      "name_en": "softwareVersion",
-      "name_cn": "软件版本",
-      "data_type": "字符",
-      "required": false,
-      "example": "5.10.00",
-      "has_enumeration": false,
-      "enumeration_values": []
-    },
-    "neType": {
-      "name_en": "neType",
-      "name_cn": "网元类型",
-      "data_type": "枚举",
+    "NE_role": {
+      "label": "role",
+      "domain": "NE",
+      "range": "enum",
+      "comment": "",
+      "propertyType": "enum",
+      "name_cn": "角色",
       "required": true,
-      "has_enumeration": false,
-      "enumeration_values": []
+      "example": "OLA",
+      "has_enumeration": true,
+      "enumeration_values": [
+        "OTM",
+        "OLA",
+        "OADM",
+        "OXC"
+      ]
     },
-    "createTime": {
-      "name_en": "createTime",
-      "name_cn": "创建时间",
-      "data_type": "字符",
+    "Card_rmUID": {
+      "label": "rmUID",
+      "domain": "Card",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "板卡rmUID",
       "required": true,
-      "example": "2023-01-01 01:02:04",
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "maintenanceStatus": {
-      "name_en": "maintenanceStatus",
-      "name_cn": "网元维护态",
-      "data_type": "枚举",
+    "Card_nermUID": {
+      "label": "nermUID",
+      "domain": "Card",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "所属网元rmUID",
       "required": true,
-      "example": "0",
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "nermUID": {
-      "name_en": "nermUID",
-      "name_cn": "所属网元",
-      "data_type": "字符",
+    "Card_nativeName": {
+      "label": "nativeName",
+      "domain": "Card",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "本地名称",
       "required": true,
+      "example": "1000-安阳黄河路-HW-OSN9800/2-1-1（NS4）",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "serialNumber": {
-      "name_en": "serialNumber",
-      "name_cn": "序列号",
-      "data_type": "字符",
-      "required": false,
-      "example": "020PRR10AB000071",
-      "has_enumeration": false,
-      "enumeration_values": []
-    },
-    "holderrmUID": {
-      "name_en": "holderrmUID",
-      "name_cn": "板卡所属容器rmUID",
-      "data_type": "字符",
+    "Port_rmUID": {
+      "label": "rmUID",
+      "domain": "Port",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "端口rmUID",
       "required": true,
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "cardType": {
-      "name_en": "cardType",
-      "name_cn": "板卡型号",
-      "data_type": "字符",
+    "Port_cardrmUID": {
+      "label": "cardrmUID",
+      "domain": "Port",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "所属板卡rmUID",
       "required": true,
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     },
-    "serviceState": {
-      "name_en": "serviceState",
-      "name_cn": "单板状态",
-      "data_type": "枚举",
+    "Port_portNo": {
+      "label": "portNo",
+      "domain": "Port",
+      "range": "integer",
+      "comment": "",
+      "propertyType": "integer",
+      "name_cn": "端口序号",
       "required": true,
+      "example": "1",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "Port_nativeName": {
+      "label": "nativeName",
+      "domain": "Port",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "本地名称",
+      "required": true,
+      "example": "1000-安阳黄河路-HW-OSN9800/2-1-1（NS4）-1",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "Port_portRate": {
+      "label": "portRate",
+      "domain": "Port",
+      "range": "enum",
+      "comment": "",
+      "propertyType": "enum",
+      "name_cn": "端口速率",
+      "required": true,
+      "example": "10G",
+      "has_enumeration": true,
+      "enumeration_values": [
+        "10G",
+        "10GE",
+        "40G",
+        "40GE",
+        "100G",
+        "100GE",
+        "200G",
+        "200GE",
+        "300G",
+        "400G",
+        "400GE",
+        "nan",
+        "Other"
+      ]
+    },
+    "TopoLink_rmUID": {
+      "label": "rmUID",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "拓扑连接rmUID",
+      "required": true,
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "TopoLink_nativeName": {
+      "label": "nativeName",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "本地名称",
+      "required": true,
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "TopoLink_aEndNermUID": {
+      "label": "aEndNermUID",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "连接起点网元rmUID",
+      "required": true,
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "TopoLink_zEndNermUID": {
+      "label": "zEndNermUID",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "连接终点网元rmUID",
+      "required": true,
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "TopoLink_aEndPortrmUID": {
+      "label": "aEndPortrmUID",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "连接起点端口rmUID",
+      "required": true,
+      "example": "nan",
+      "has_enumeration": false,
+      "enumeration_values": []
+    },
+    "TopoLink_zEndPortrmUID": {
+      "label": "zEndPortrmUID",
+      "domain": "TopoLink",
+      "range": "string",
+      "comment": "",
+      "propertyType": "string",
+      "name_cn": "连接终点端口rmUID",
+      "required": true,
+      "example": "nan",
       "has_enumeration": false,
       "enumeration_values": []
     }
   },
+  "rel_properties": {},
   "enumerations": {
-    "端口速率": [
-      "1G",
-      "GE",
-      "10G",
-      "10GE",
-      "40G",
-      "40GE",
-      "100G",
-      "100GE",
-      "200G",
-      "200GE",
-      "300G",
-      "400G",
-      "400GE"
-    ]
+    "NE": {
+      "role": [
+        {
+          "value": "OTM",
+          "desc": "Optical Terminal Multiplexing"
+        },
+        {
+          "value": "OLA",
+          "desc": "optical Line Amplifier"
+        },
+        {
+          "value": "OADM",
+          "desc": "Optical Add & Drop Multiplexing"
+        },
+        {
+          "value": "OXC",
+          "desc": "Optical Cross Connect"
+        }
+      ]
+    },
+    "Port": {
+      "portRate": [
+        {
+          "value": "10G",
+          "desc": "STM64、odu2、ODU2e、OTU2、10GbE-WAN、ODU1f、10GE_LAN、STM64再生段、FC-1200(10G)、1xIB QDR、CPRI选项7、CPRI选项8、OTU2e、OTU1f、oduflex N=8"
+        },
+        {
+          "value": "10GE",
+          "desc": "10GE"
+        },
+        {
+          "value": "40G",
+          "desc": "STM256、odu3、ODU3e1、ODU3e2、OTU3、STM256再生段、OTU3、OTU3e1、OTU3e2"
+        },
+        {
+          "value": "40GE",
+          "desc": "40GE"
+        },
+        {
+          "value": "100G",
+          "desc": "odu4、OTU4、ODUC1、OTUC1"
+        },
+        {
+          "value": "100GE",
+          "desc": "100GE"
+        },
+        {
+          "value": "200G",
+          "desc": "ODUC2、OTUC2"
+        },
+        {
+          "value": "200GE",
+          "desc": "200GE"
+        },
+        {
+          "value": "300G",
+          "desc": "ODUC3、OTUC3"
+        },
+        {
+          "value": "400G",
+          "desc": "OTUC4"
+        },
+        {
+          "value": "400GE",
+          "desc": "400GE"
+        },
+        {
+          "value": "nan",
+          "desc": "表示不关注"
+        },
+        {
+          "value": "Other",
+          "desc": "不在上述列表里的速率值，填其速率值，单位K或者M或者G，例如：25G、20M、64K\n注：当填写数字类型的字符时，默认单位为G。"
+        }
+      ]
+    }
+  },
+  "object_properties": {
+    "belongToNE": {
+      "name_cn": "归属于设备",
+      "domain": "Card",
+      "range": "NE"
+    },
+    "belongToCard": {
+      "name_cn": "归属于板卡",
+      "domain": "Port",
+      "range": "Card"
+    },
+    "connectToPort": {
+      "name_cn": "连接到端口",
+      "domain": "TopoLink",
+      "range": "Port"
+    }
   }
 }
