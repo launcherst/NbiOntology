@@ -12,7 +12,7 @@ from pathlib import Path
 class DataLoaderAgent:
     """
     从Excel加载数据, 输出标准化结构
-    直接对接电信领域本体构建流水线
+    直接对接otn本体构建流水线
     """
 
     def __init__(self, excel_path: str):
@@ -40,17 +40,6 @@ class DataLoaderAgent:
         """
         df = pd.read_excel(self.excel_path, sheet_name="资源对象清单")
 
-        """ # 读取【资源对象英文名称】列（本体构建用）
-        self.resource_en_names = [
-            str(x).strip() for x in df["资源对象英文名称"].dropna()
-        ]
-
-        # 读取【资源对象简称】列
-        self.resource_short_names = [
-            str(x).strip() for x in df["资源对象简称"].dropna()
-        ]
-        """
-
         # 按行构建映射（确保三列对应）
         for _, row in df.dropna(
             subset=["资源对象中文名称", "资源对象英文名称"]
@@ -59,7 +48,10 @@ class DataLoaderAgent:
             cls_name_en = str(row["资源对象英文名称"]).strip()
             short_name = str(row["资源对象简称"]).strip()
 
-            self.resource_map[cls_name_cn] = {"cls_name_en": cls_name_en, "short_name": short_name}
+            self.resource_map[cls_name_cn] = {
+                "cls_name_en": cls_name_en,
+                "short_name": short_name,
+            }
 
     def _extract_cn_name(self, sheet_name: str) -> str:
         """
@@ -113,8 +105,9 @@ class DataLoaderAgent:
                 continue
 
             # 解析属性列表
-            attr_list = []
+            attributes = {}
             for _, row in df.iterrows():
+                """
                 attr = {
                     "name_en": str(row["属性英文名称"]).strip(),
                     "name_cn": str(row["属性中文名称"]).strip(),
@@ -127,10 +120,23 @@ class DataLoaderAgent:
                     ),
                     "example": str(row["数据示例"]).strip(),
                 }
-                attr_list.append(attr)
+                """
+                attributes.update({
+                    str(row.get("属性英文名称", "")).strip(): {
+                        "name_cn": str(row.get("属性中文名称", "")).strip(),
+                        "type": str(row.get("字符类型", "")).strip(),
+                        "required": str(row.get("是否必填", "")).strip() == "是",
+                        "desc": (
+                            str(row.get("取值范围及说明", "")).strip()
+                            if pd.notna(row.get("取值范围及说明", ""))
+                            else ""
+                        ),
+                        "example": str(row.get("数据示例", "")).strip(),
+                    },
+                })
 
             # ✅ 最终以【资源对象英文名称】为 key 存储
-            self.resource_attributes[cls_name_en] = attr_list
+            self.resource_attributes[cls_name_en] = attributes
 
     def _load_enum_dictionary(self):
         """
