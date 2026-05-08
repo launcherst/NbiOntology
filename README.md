@@ -11,6 +11,7 @@ Transport Networks Knowledge Graph Based on NBI
 
 ## 整体架构
 <img width="3594" height="574" alt="deepseek_mermaid_20260508_ebc858" src="https://github.com/user-attachments/assets/e030d858-9c18-4d87-9ce3-a693eb69cae8" />
+
 - 数据层：Excel 定义资源/性能模型，实例数据按模型组织为 RDF。
 - 知识层：本体（TBox）+ 实例（ABox）构成完整知识图谱。
 - 分析层：基于 LangChain 的 Agent，封装 SPARQL 查询工具，由 LLM 决策调用。
