@@ -304,62 +304,8 @@ class OntologyGenerator:
         ontologies = list(g.triples((None, RDF.type, OWL.Ontology)))
         print(f"Ontology declarations: {len(ontologies)}")
         
-        # 5. 保存为 RDF 文件
+        # 5. 保存为 RDF 文件, 注意使用 pretty-xml 格式以提高可读性与兼容性
         g.serialize(destination=save_path, format="pretty-xml")
-
-    def to_owl_script(self, save_path: str = "output/otn_ontology_script.owl"):
-        """【可选】生成 OWL 格式的本体文本（适合语义网工具）"""
-        owl_text = self.to_owl_text()
-        with open(save_path, "w", encoding="utf-8") as f:
-            f.write(owl_text)
-        print(f"✅ 本体 OWL 已保存至：{save_path}")
-    
-    def to_owl_lib(self, save_path: str = "output/otn_ontology_lib.owl"):
-        """使用OWLLib等库生成更规范的 OWL 输出（可选）"""
-        # TODO: 使用 OWLLib（Python）等专业库来生成更规范的 OWL 输出
-        pass
-
-    def to_owl_text(self) -> str:
-        """生成简易 OWL 本体文本（可导入 Protegé 等本体工具）"""
-        owl_lines = [
-            '<?xml version="1.0"?>',
-            '<Ontology xmlns="http://www.w3.org/2002/07/owl#">',
-            f"  <Annotation IRI=\"#name_cn\" value=\"{self.ontology['name_cn']}\"/>",
-            f"  <Annotation IRI=\"#name_en\" value=\"{self.ontology['name_en']}\"/>",
-            "",
-        ]
-
-        # 写入类
-        owl_lines.append("  <!-- otn资源类 -->")
-        for cls_en, cls_info in self.ontology["classes"].items():
-            owl_lines.extend(
-                [
-                    f'  <Class IRI="#{cls_en}">',
-                    f"    <Annotation IRI=\"#label_cn\" value=\"{cls_info['name_cn']}\"/>",
-                    f"    <Annotation IRI=\"#short_name\" value=\"{cls_info['short_name']}\"/>",
-                    "  </Class>",
-                ]
-            )
-
-        owl_lines.append("\n  <!-- 数据属性 -->")
-        # 写入数据属性
-        for prop_en, prop_info in self.ontology["data_properties"].items():
-            has_enum = prop_info["has_enumeration"]
-            enum_str = " | ".join(prop_info["enumeration_values"]) if has_enum else "无"
-
-            owl_lines.extend(
-                [
-                    f'  <DataProperty IRI="#{prop_en}">',
-                    f"    <Annotation IRI=\"#label_cn\" value=\"{prop_info['name_cn']}\"/>",
-                    f"    <Annotation IRI=\"#data_type\" value=\"{prop_info['data_type']}\"/>",
-                    f"    <Annotation IRI=\"#required\" value=\"{prop_info['required']}\"/>",
-                    f'    <Annotation IRI="#enumeration" value="{enum_str}"/>',
-                    "  </DataProperty>",
-                ]
-            )
-
-        owl_lines.append("</Ontology>")
-        return "\n".join(owl_lines)
 
     def print_ontology_summary(self):
         """打印本体概览（方便调试、查看结果）"""
