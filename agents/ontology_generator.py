@@ -3,9 +3,11 @@
 # @datetime: 2026/04/26 21:03 UTC+8
 # @version: 0.0.1
 
-from typing import Dict, List, Any
+from typing import Dict, Any
 import json
 from pathlib import Path
+from rdflib import Graph, Namespace, URIRef, Literal
+from rdflib.namespace import RDF, RDFS, OWL, XSD
 
 
 class OntologyGenerator:
@@ -143,9 +145,11 @@ class OntologyGenerator:
             json.dump(self.ontology, f, ensure_ascii=False, indent=2)
         print(f"✅ 本体 JSON 已保存至：{save_path}")
 
-    def to_rdf(self, save_path: str = "output/otn_ontology_test.rdf"):
+    def to_rdf_script(self, save_path: str = "output/otn_ontology_script.rdf"):
         """【可选】生成 RDF/Turtle 格式的本体文本（适合语义网工具）"""
         # 这里可以根据需要实现 RDF/Turtle 格式的输出
+        # 初步测试通过，可以由microsoft ontology playground等工具成功导入
+        # TODO: 但目前生成的RDF文件在一些工具中可能会有解析问题（如缺少必要的OWL公理或命名空间声明），需要进一步调整和完善生成逻辑以确保兼容性。
         rdf_content = []
         rdf_content.append(f'<?xml version="1.0" encoding="UTF-8"?>')
         rdf_content.append(f'<rdf:RDF')
@@ -218,6 +222,102 @@ class OntologyGenerator:
         with open(save_path, "w", encoding="utf-8") as f:
             f.write('\n'.join(rdf_content))
         print(f"✅ 本体 RDF 已保存至：{save_path}")
+
+    def to_rdf_lib(self, save_path: str = "output/otn_ontology_lib.rdf"):
+        """使用RDFLib等库生成更规范的 RDF 输出（可选）"""
+        # 初步测试通过，可以由microsoft ontology playground等工具成功导入
+
+        # 定义命名空间
+        g = Graph()
+        ex = Namespace("http://example.org/ontology/otn-ontology#")
+        ontology_uri = URIRef("http://example.org/ontology/otn-ontology")
+        g.bind("ex", ex)
+        g.bind("owl", OWL)
+        g.bind("rdf", RDF)
+        g.bind("rdfs", RDFS)
+        g.bind("xsd", XSD)
+
+        # 写入本体声明
+        g.add((ontology_uri, RDF.type, OWL.Ontology))
+        g.add((ontology_uri, RDFS.label, Literal("otn ontology")))
+        g.add((ontology_uri, RDFS.comment, Literal("Generated ontology for otn resources")))
+
+        # 声明自定义属性 (annotation properties)
+        g.add((ex.shortName, RDF.type, OWL.AnnotationProperty))
+        g.add((ex.shortName, RDFS.label, Literal("short name")))
+        g.add((ex.name, RDF.type, OWL.AnnotationProperty))
+        g.add((ex.name, RDFS.label, Literal("cn name")))
+        g.add((ex.enumValues, RDF.type, OWL.AnnotationProperty))
+        g.add((ex.enumValues, RDFS.label, Literal("enumeration values")))
+        g.add((ex.cardinality, RDF.type, OWL.AnnotationProperty))
+        g.add((ex.cardinality, RDFS.label, Literal("cardinality")))
+
+        # 1. 写入类定义
+        for cls_en, cls_info in self.ontology["classes"].items():
+            class_uri = ex[cls_en]
+            g.add((class_uri, RDF.type, OWL.Class))
+            g.add((class_uri, RDFS.label, Literal(cls_info["label"])))
+            g.add((class_uri, RDFS.comment, Literal(cls_info["comment"])))
+            g.add((class_uri, ex.name, Literal(cls_info["name"])))
+            g.add((class_uri, ex.shortName, Literal(cls_info["short_name"])))
+        
+        # 2. 写入数据属性定义
+        for prop_en, prop_info in self.ontology["data_properties"].items():
+            prop_uri = ex[prop_en]
+            g.add((prop_uri, RDF.type, OWL.DatatypeProperty))
+            g.add((prop_uri, RDFS.label, Literal(prop_info["label"])))
+            g.add((prop_uri, RDFS.domain, ex[prop_info["domain"]]))
+            
+            # 处理 XSD 类型
+            xsd_type = prop_info["range"]
+            if xsd_type.startswith("xsd:"):
+                xsd_type = xsd_type[4:]  # 去掉 "xsd:" 前缀, 得到如 "string", "integer" 等
+            g.add((prop_uri, RDFS.range, XSD[xsd_type]))
+            
+            g.add((prop_uri, RDFS.comment, Literal(prop_info["comment"])))
+            g.add((prop_uri, ex.name, Literal(prop_info["name"])))
+            
+            if prop_info["has_enumeration"]:
+                enum_values = ",".join(prop_info["enumeration_values"])
+                g.add((prop_uri, ex.enumValues, Literal(enum_values)))
+        
+        # 3. 写入对象属性定义
+        for prop_en, prop_info in self.ontology["object_properties"].items():
+            prop_uri = ex[prop_en]
+            g.add((prop_uri, RDF.type, OWL.ObjectProperty))
+            g.add((prop_uri, RDFS.label, Literal(prop_info["label"])))
+            g.add((prop_uri, RDFS.domain, ex[prop_info["domain"]]))
+            g.add((prop_uri, RDFS.range, ex[prop_info["range"]]))
+            g.add((prop_uri, RDFS.comment, Literal(prop_info["comment"])))
+            g.add((prop_uri, ex.cardinality, Literal(prop_info["cardinality"])))
+        
+        # 4. 其他 OWL 公理，如类之间的关系、属性的特性等，可以根据需要添加
+
+        # 调试：打印图中三元组的数量
+        print(f"Total triples: {len(g)}")
+        # 检查是否有 OWL 类
+        owl_classes = list(g.triples((None, RDF.type, OWL.Class)))
+        print(f"OWL classes: {len(owl_classes)}")
+        for c in owl_classes[:4]:
+            print(f"  - {c[0]}")
+        # 检查是否有本体声明
+        ontologies = list(g.triples((None, RDF.type, OWL.Ontology)))
+        print(f"Ontology declarations: {len(ontologies)}")
+        
+        # 5. 保存为 RDF 文件
+        g.serialize(destination=save_path, format="pretty-xml")
+
+    def to_owl_script(self, save_path: str = "output/otn_ontology_script.owl"):
+        """【可选】生成 OWL 格式的本体文本（适合语义网工具）"""
+        owl_text = self.to_owl_text()
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(owl_text)
+        print(f"✅ 本体 OWL 已保存至：{save_path}")
+    
+    def to_owl_lib(self, save_path: str = "output/otn_ontology_lib.owl"):
+        """使用OWLLib等库生成更规范的 OWL 输出（可选）"""
+        # TODO: 使用 OWLLib（Python）等专业库来生成更规范的 OWL 输出
+        pass
 
     def to_owl_text(self) -> str:
         """生成简易 OWL 本体文本（可导入 Protegé 等本体工具）"""
