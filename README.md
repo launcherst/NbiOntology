@@ -2,18 +2,19 @@
 Transport Networks Knowledge Graph Based on NBI
 
 ## 技术栈
-Python + `pandas`（读 Excel）+ `rdflib/owlready2`（生成 OWL）
+- Python
+- `pandas`（读取 Excel）
+- `rdflib`（生成 OWL）
+- LLM：Ollama本地模型
+- SPARQL 查询：rdflib.plugins.sparql 足够小型图谱。
+- 可视化：Mermaid 流程图在浏览器端渲染，零依赖。
 
-## 核心能力
-- 自动读取多 Sheet 北向 Excel
-- 自动生成：本体类、数据属性、关联关系、枚举类
-- 直接输出`.rdf/.owl`文件，可直接导入 Protege/Neo4j
-- 支持增量更新、批量导入全网北向模型
+## 整体架构
+<img width="3594" height="574" alt="deepseek_mermaid_20260508_ebc858" src="https://github.com/user-attachments/assets/e030d858-9c18-4d87-9ce3-a693eb69cae8" />
+- 数据层：Excel 定义资源/性能模型，实例数据按模型组织为 RDF。
+- 知识层：本体（TBox）+ 实例（ABox）构成完整知识图谱。
+- 分析层：基于 LangChain 的 Agent，封装 SPARQL 查询工具，由 LLM 决策调用。
+- 展示层：Streamlit 构建的轻量 Web 界面
 
-## 流水线 6 大步骤
-1. **Data Loadert**：加载运营商 Excel 北向资源模型
-2. **Ontology Generator**：自动生成 OWL 本体
-3. **Entity & Relation Extractor**：抽取实体 / 关系 / 属性
-4. **Knowledge Fusion**：实体对齐、去重、标准化
-5. **Constructor**：生成三元组 + 构建图
-6. **Storage & Visualization**：存入 Neo4j / 输出 OWL
+## 流水线
+Excel实例数据 → 生成RDF实例文件 → 加载图谱 → LLM Agent(SPARQL) → 返回答案
