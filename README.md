@@ -2,12 +2,12 @@
 Transport Networks Knowledge Graph Based on NBI
 
 ## 技术栈
-Python + `pandas/openpyxl`（读 Excel）+ `owlready2`（生成 OWL）
+Python + `pandas`（读 Excel）+ `rdflib/owlready2`（生成 OWL）
 
 ## 核心能力
 - 自动读取多 Sheet 北向 Excel
 - 自动生成：本体类、数据属性、关联关系、枚举类
-- 直接输出`.owl`文件，可直接导入 Neo4j
+- 直接输出`.rdf/.owl`文件，可直接导入 Protege/Neo4j
 - 支持增量更新、批量导入全网北向模型
 
 ## 流水线 6 大步骤
