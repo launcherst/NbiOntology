@@ -1,57 +1,100 @@
 # -*- coding: utf-8 -*-
 # @author: daiwei.tan
 # @datetime: 2026/04/26 21:03 UTC+8
-# @version: 0.0.1
+# @version: 0.0.2
 
-from operator import ge
+from pathlib import Path
 
-from agents.data_loader import DataLoaderAgent
+from agents.data_loader import DataLoaderAgent, InstanceDataLoader, PerformanceDataLoader
 from agents.ontology_generator import OntologyGenerator
-from agents.extractor import EntityRelationExtractor
-from agents.fusion import KnowledgeFusionAgent
-from agents.kg_builder import KGConstructorAgent
-from agents.storage import StorageAgent
+from agents.instances_generator import generate_instances
 
-# ======================
-# 1. 配置项
-# ======================
-EXCEL_PATH = "data/NbiExampleOtnResources.xlsx"
-OWL_OUTPUT = "output/OtnResources.owl"
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_AUTH = ("neo4j", "password")
 
-# ======================
-# 2. 启动 KG 构建流水线
-# ======================
-if __name__ == "__main__":
-    # 1. 加载 Excel 资源模型
-    loader = DataLoaderAgent(EXCEL_PATH)
+EXCEL_RESOURCE = "data/NbiExampleOtnResources.xlsx"
+EXCEL_PERFORMANCE = "data/NbiExampleOtnPerformance.xlsx"
+DATA_DIR = "data"
+OUTPUT_DIR = "output"
+SAMPLE_NE = 20  # 采样 NE 数量 (控制图谱规模, None=全部)
+
+
+def step1_convert_xml_to_csv():
+    """步骤1: 将 NBI XML 数据转为 CSV"""
+    print("=" * 50)
+    print("Step 1: Converting NBI XML to CSV...")
+    from agents.xml_to_csv_batch import batch_convert_xml_in_directory
+    batch_convert_xml_in_directory(DATA_DIR, recursive=False)
+    print()
+
+
+def step2_generate_ontology():
+    """步骤2: 生成本体 (TBox)"""
+    print("=" * 50)
+    print("Step 2: Generating Ontology...")
+    loader = DataLoaderAgent(EXCEL_RESOURCE)
     standard_data = loader.load_all()
 
-    # 2. 自动生成 Ontology (OWL)
     generator = OntologyGenerator(standard_data)
-    ontology = generator.generate_ontology()
-    # ontology.save(OWL_OUTPUT)
+    generator.generate_ontology()
+    generator.print_ontology_summary()
+    generator.to_rdf_lib("output/otn_ontology_lib.rdf")
+    generator.to_json("output/otn_ontology_test.json")
+    print()
+    return generator.ontology
 
-    # 3. 输出结果
-    generator.print_ontology_summary()  # 打印概览
-    # generator.to_json()  # 保存为JSON本体文件
-    generator.to_rdf_lib() # 保存为RDF文件
 
-    # 4. 自动抽取实体 + 关系
-    extractor = EntityRelationExtractor(standard_data)
-    entities, relations_triples = extractor.extract()
+def step3_generate_instances():
+    """步骤3: 生成实例 (ABox)"""
+    print("=" * 50)
+    print("Step 3: Generating Instances...")
 
-    # 4. 知识融合（对齐/去重）
-    fusion = KnowledgeFusionAgent()
-    entities_clean, triples_clean = fusion.fuse(entities, relations_triples)
+    # 3a. Load instance data from CSV (sample by NE)
+    print("  [3a] Loading instance data from CSV...")
+    inst_loader = InstanceDataLoader(data_dir=DATA_DIR)
+    instance_data = inst_loader.load_all(sample_ne=SAMPLE_NE)
 
-    # 5. 构建知识图谱
-    kg_builder = KGConstructorAgent()
-    kg = kg_builder.build(entities_clean, triples_clean)
+    # 3b. Load performance definitions & generate sample records
+    print("  [3b] Loading performance definitions...")
+    perf_loader = PerformanceDataLoader(EXCEL_PERFORMANCE)
+    perf_loader.load_definitions()
+    perf_records = perf_loader.generate_sample_records(instance_data, records_per_resource=2)
 
-    # 6. 存入 Neo4j + 可视化
-    storage = StorageAgent(NEO4J_URI, NEO4J_AUTH)
-    storage.save_to_neo4j(kg)
+    # 3c. Generate RDF instances
+    print("  [3c] Generating RDF instances...")
+    g = generate_instances(
+        instance_data=instance_data,
+        performance_records=perf_records,
+        output_ttl="output/instances.ttl",
+    )
+    print()
+    return g
 
-    print("✅ OTN资源知识图谱构建完成！")
+
+def main():
+    """主流水线: 本体生成 → 实例生成 → (可选)启动 Web"""
+    Path(OUTPUT_DIR).mkdir(exist_ok=True)
+
+    # Step 1: Convert XML to CSV (skip if CSVs already exist)
+    csv_files = list(Path(DATA_DIR).glob("CM-OTN-*.csv"))
+    if not csv_files:
+        step1_convert_xml_to_csv()
+    else:
+        print(f"  Found {len(csv_files)} existing CSV files, skipping XML conversion.\n")
+
+    # Step 2: Generate Ontology
+    step2_generate_ontology()
+
+    # Step 3: Generate Instances
+    step3_generate_instances()
+
+    print("=" * 50)
+    print("Pipeline complete!")
+    print(f"  Ontology: output/otn_ontology_lib.rdf")
+    print(f"  Instances: output/instances.ttl")
+    print()
+    print("To start the web interface, run:")
+    print("  streamlit run app.py")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    main()
