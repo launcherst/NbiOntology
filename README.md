@@ -32,6 +32,7 @@ Excel实例数据 → 生成RDF实例文件 → 加载图谱 → LLM Agent(SPARQ
 
 ## 项目文件结构
 
+```
 Ontology/
 ├── agents/                       # 本体构建
 │   ├── data_loader.py            # OntologyBuilder 类(已有, 需扩展 self.ontology)
@@ -55,3 +56,4 @@ Ontology/
 ├── app.py                 # 后续扩展为 Streamlit Web 入口
 ├── main.py                # 程序入口
 └── requirements.txt
+```
