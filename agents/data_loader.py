@@ -5,6 +5,8 @@
 
 import pandas as pd
 import re
+import random
+import datetime
 from typing import Dict, List, Any
 from pathlib import Path
 
@@ -56,7 +58,7 @@ class DataLoaderAgent:
     def _extract_cn_name(self, sheet_name: str) -> str:
         """
         规则：
-        1. 去掉【开头】的 数字 + 特殊符号（、,.\-_等）
+        1. 去掉【开头】的 数字 + 特殊符号（、,.\\-_等）
         2. 保留【后面所有内容】，包括数字、字母、特殊符号
         3. 返回清理后的名称，用于匹配【资源对象中文名称】
 
@@ -68,9 +70,6 @@ class DataLoaderAgent:
         """
 
         # 正则：匹配开头的 数字 + 所有非文字非字母符号，删除它们
-        # ^ 表示开头
-        # \d+ 表示一个或多个数字
-        # [^\w\s]* 表示非字母、非数字、非文字的符号（、,.\-_#@%等）
         return re.sub(r"^\d+[^\w\s]*", "", sheet_name).strip()
 
     def _load_all_resource_attributes(self):
@@ -166,3 +165,151 @@ class DataLoaderAgent:
             "resource_attributes": self.resource_attributes,  # 英文名称→属性
             "enum_dictionary": self.enum_dictionary,  # 属性枚举
         }
+
+
+class InstanceDataLoader:
+    """从CSV文件加载NBI实例数据, 输出结构化字典供instances_generator使用"""
+
+    def __init__(self, data_dir: str = "data"):
+        self.data_dir = Path(data_dir)
+
+    def load_all(self, sample_ne: int = None) -> Dict[str, Any]:
+        """加载所有实例数据, 可选按NE数量采样以减少图谱规模"""
+        import random
+
+        result = {}
+        # 1. Load NE first
+        ne_instances = self._load_csv("NE")
+        if sample_ne and len(ne_instances) > sample_ne:
+            random.seed(42)
+            ne_instances = random.sample(ne_instances, sample_ne)
+        result["NE"] = ne_instances
+        ne_uids = {n["rmUID"] for n in ne_instances}
+
+        # 2. Load Card - filter by sampled NE UIDs
+        cards = self._load_csv("Card")
+        cards = [c for c in cards if c.get("nermUID", "") in ne_uids]
+        result["Card"] = cards
+        card_uids = {c["rmUID"] for c in cards}
+
+        # 3. Load Port - filter by sampled NE UIDs or Card UIDs
+        ports = self._load_csv("Port")
+        ports = [p for p in ports if p.get("nermUID", "") in ne_uids]
+        result["Port"] = ports
+        port_uids = {p["rmUID"] for p in ports}
+
+        # 4. Load TopoLink - filter by sampled NE UIDs
+        links = self._load_csv("TopoLink")
+        links = [
+            l for l in links
+            if l.get("aEndNermUID", "") in ne_uids or l.get("zEndNermUID", "") in ne_uids
+        ]
+        result["TopoLink"] = links
+
+        print(f"  Loaded: {len(ne_instances)} NE, {len(cards)} Card, "
+              f"{len(ports)} Port, {len(links)} TopoLink")
+        return result
+
+    def _find_csv(self, cls_name: str) -> Path:
+        """根据类名查找对应的CSV文件"""
+        prefix_map = {
+            "NE": "CM-OTN-NEL",
+            "Card": "CM-OTN-CRD",
+            "Port": "CM-OTN-PRT",
+            "TopoLink": "CM-OTN-TPL",
+        }
+        prefix = prefix_map.get(cls_name, "")
+        # prefer shorter filename (newer conversion format)
+        candidates = sorted(self.data_dir.glob(f"{prefix}*.csv"))
+        if not candidates:
+            return None
+        # pick the one with shortest name (most direct conversion)
+        return min(candidates, key=lambda p: len(p.name))
+
+    def _load_csv(self, cls_name: str) -> List[Dict[str, str]]:
+        """加载某个类的CSV数据"""
+        csv_path = self._find_csv(cls_name)
+        if not csv_path:
+            print(f"  [WARN] No CSV found for {cls_name}")
+            return []
+        df = pd.read_csv(csv_path, encoding="utf-8-sig")
+        df = df.fillna("")
+        return df.to_dict(orient="records")
+
+
+class PerformanceDataLoader:
+    """从性能Excel加载性能数据定义, 并为实例生成模拟性能数据"""
+
+    def __init__(self, excel_path: str = "data/NbiExampleOtnPerformance.xlsx"):
+        self.excel_path = Path(excel_path)
+        self.performance_defs: Dict[str, List[Dict]] = {}
+
+    def load_definitions(self) -> Dict[str, List[Dict]]:
+        """加载性能指标定义"""
+        xf = pd.ExcelFile(self.excel_path)
+        cls_map = {"1.板卡": "Card", "8、网元": "NE", "9、端口": "Port"}
+
+        for sheet_name in xf.sheet_names:
+            if sheet_name not in cls_map:
+                continue
+            cls_en = cls_map[sheet_name]
+            df = pd.read_excel(self.excel_path, sheet_name=sheet_name)
+            df = df.dropna(subset=["英文名称"])
+            metrics = []
+            for _, row in df.iterrows():
+                name_en = str(row["英文名称"]).strip()
+                if name_en == "rmUID":
+                    continue  # skip ID field
+                metrics.append({
+                    "name_en": name_en,
+                    "name_cn": str(row.get("中文名称", "")).strip(),
+                    "type": str(row.get("字符类型", "")).strip(),
+                    "unit": str(row.get("单位", "")).strip() if pd.notna(row.get("单位", "")) else "",
+                })
+            self.performance_defs[cls_en] = metrics
+
+        return self.performance_defs
+
+    def generate_sample_records(
+        self, instances: Dict[str, List[Dict]], records_per_resource: int = 2
+    ) -> List[Dict]:
+        """为实例生成模拟性能记录"""
+        import random
+        import datetime
+
+        random.seed(42)
+        records = []
+        base_ts = datetime.datetime(2026, 5, 8, 12, 0, 0)
+
+        for cls_en, metrics in self.performance_defs.items():
+            if cls_en not in instances:
+                continue
+            for inst in instances[cls_en]:
+                for _ in range(records_per_resource):
+                    ts = base_ts + datetime.timedelta(minutes=random.randint(0, 1440))
+                    for m in metrics:
+                        val = self._simulate_value(m["name_en"])
+                        records.append({
+                            "resourceUID": inst["rmUID"],
+                            "resourceType": cls_en,
+                            "metricName": m["name_en"],
+                            "metricValue": val,
+                            "timestamp": ts.strftime("%Y-%m-%dT%H:%M:%S"),
+                        })
+        print(f"  Generated {len(records)} sample PerformanceRecord instances")
+        return records
+
+    def _simulate_value(self, metric_name: str) -> float:
+        """根据指标名模拟合理数值"""
+        import random
+        ranges = {
+            "temperature": (20, 85),
+            "cpu": (5, 95),
+            "mem": (10, 90),
+            "runtimePower": (100, 2000),
+            "consumption": (0.5, 50),
+            "consumptionReduce": (0, 10),
+            "consumptionReduceTime": (0, 60),
+        }
+        lo, hi = ranges.get(metric_name, (0, 100))
+        return round(random.uniform(lo, hi), 2)
