@@ -39,7 +39,9 @@ class OntologyGenerator:
         """统一入口: 生成完整otn资源本体"""
         self._generate_classes()
         self._generate_data_properties()
-        self._generate_rel_properties()  # 【新增】生成类关系
+        self._generate_rel_properties()
+        self._add_location_class()
+        self._add_performance_record_class()
         return self.ontology
 
     def _generate_classes(self):
@@ -134,6 +136,89 @@ class OntologyGenerator:
 
         self.ontology["object_properties"] = object_props
 
+    def _add_location_class(self):
+        """添加 Location 类及其数据属性"""
+        self.ontology["classes"]["Location"] = {
+            "label": "Location",
+            "short_name": "LOC",
+            "comment": "物理位置信息",
+            "name": "位置",
+            "data_properties": [],
+        }
+        loc_props = {
+            "locationName": {
+                "label": "locationName", "domain": "Location",
+                "range": "xsd:string", "comment": "位置名称",
+                "propertyType": "string", "name": "位置名称",
+                "required": True, "example": "HE-SJZ", "has_enumeration": False,
+                "enumeration_values": [],
+            },
+            "locationType": {
+                "label": "locationType", "domain": "Location",
+                "range": "xsd:string", "comment": "位置类型(机房/城市/区域等)",
+                "propertyType": "string", "name": "位置类型",
+                "required": False, "example": "机房", "has_enumeration": False,
+                "enumeration_values": [],
+            },
+        }
+        for k, v in loc_props.items():
+            self.ontology["classes"]["Location"]["data_properties"].append(k)
+            self.ontology["data_properties"]["Location_" + k] = v
+
+        # add object property: NE locatedAt Location
+        self.ontology["object_properties"]["NE_locatedAt_Location"] = {
+            "label": "locatedAt",
+            "domain": "NE",
+            "range": "Location",
+            "comment": "NE is located at a Location",
+            "cardinality": "0..*",
+        }
+
+    def _add_performance_record_class(self):
+        """添加 PerformanceRecord 类及其数据属性"""
+        self.ontology["classes"]["PerformanceRecord"] = {
+            "label": "PerformanceRecord",
+            "short_name": "PRF",
+            "comment": "性能采样记录, 关联资源、指标名、值、时间戳",
+            "name": "性能记录",
+            "data_properties": [],
+        }
+        prf_props = {
+            "metricName": {
+                "label": "metricName", "domain": "PerformanceRecord",
+                "range": "xsd:string", "comment": "性能指标名称, 如 temperature/cpu/mem/runtimePower",
+                "propertyType": "string", "name": "指标名称",
+                "required": True, "example": "temperature", "has_enumeration": False,
+                "enumeration_values": [],
+            },
+            "metricValue": {
+                "label": "metricValue", "domain": "PerformanceRecord",
+                "range": "xsd:float", "comment": "性能指标值",
+                "propertyType": "float", "name": "指标值",
+                "required": True, "example": "75.5", "has_enumeration": False,
+                "enumeration_values": [],
+            },
+            "timestamp": {
+                "label": "timestamp", "domain": "PerformanceRecord",
+                "range": "xsd:dateTime", "comment": "采样时间戳",
+                "propertyType": "dateTime", "name": "时间戳",
+                "required": True, "example": "2026-05-08T12:00:00", "has_enumeration": False,
+                "enumeration_values": [],
+            },
+        }
+        for k, v in prf_props.items():
+            self.ontology["classes"]["PerformanceRecord"]["data_properties"].append(k)
+            self.ontology["data_properties"]["PerformanceRecord_" + k] = v
+
+        # add object property: PerformanceRecord forResource -> any resource class
+        self.ontology["object_properties"]["PerformanceRecord_for_Resource"] = {
+            "label": "forResource",
+            "domain": "PerformanceRecord",
+            "range": "Resource",
+            "comment": "PerformanceRecord belongs to a resource (NE/Card/Port)",
+            "cardinality": "1",
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         """返回本体字典结构"""
         return self.ontology
@@ -187,11 +272,14 @@ class OntologyGenerator:
         rdf_content.append(f'    <!-- =============== -->')
         rdf_content.append(f'')
         for prop_en, prop_info in self.ontology["data_properties"].items():
+            rdf_range = prop_info["range"]
+            if rdf_range == "enum":
+                rdf_range = "string"
             rdf_content.append(f'    <owl:DatatypeProperty rdf:about="http://example.org/ontology/otn-ontology#{prop_en}">')
             rdf_content.append(f'        <rdfs:label>{prop_en}</rdfs:label>')
             rdf_content.append(f'        <rdfs:name>{prop_info["name"]}</rdfs:name>')
             rdf_content.append(f'        <rdfs:domain rdf:resource="http://example.org/ontology/otn-ontology#{prop_info["domain"]}"/>')
-            rdf_content.append(f'        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#{prop_info["range"]}"/>')
+            rdf_content.append(f'        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#{rdf_range}"/>')
             rdf_content.append(f'        <rdfs:comment>{prop_info["comment"]}</rdfs:comment>')
             if prop_info["has_enumeration"]:
                 enum_values = ",".join(prop_info["enumeration_values"])
@@ -268,10 +356,12 @@ class OntologyGenerator:
             g.add((prop_uri, RDFS.label, Literal(prop_info["label"])))
             g.add((prop_uri, RDFS.domain, ex[prop_info["domain"]]))
             
-            # 处理 XSD 类型
+            # 处理 XSD 类型, enum 映射为 string
             xsd_type = prop_info["range"]
+            if xsd_type == "enum":
+                xsd_type = "string"
             if xsd_type.startswith("xsd:"):
-                xsd_type = xsd_type[4:]  # 去掉 "xsd:" 前缀, 得到如 "string", "integer" 等
+                xsd_type = xsd_type[4:]
             g.add((prop_uri, RDFS.range, XSD[xsd_type]))
             
             g.add((prop_uri, RDFS.comment, Literal(prop_info["comment"])))
@@ -287,7 +377,10 @@ class OntologyGenerator:
             g.add((prop_uri, RDF.type, OWL.ObjectProperty))
             g.add((prop_uri, RDFS.label, Literal(prop_info["label"])))
             g.add((prop_uri, RDFS.domain, ex[prop_info["domain"]]))
-            g.add((prop_uri, RDFS.range, ex[prop_info["range"]]))
+            # 若 range 指向已知类则添加, 否则使用 owl:Thing 作为通用范围
+            range_cls = prop_info["range"]
+            if range_cls in self.ontology["classes"]:
+                g.add((prop_uri, RDFS.range, ex[range_cls]))
             g.add((prop_uri, RDFS.comment, Literal(prop_info["comment"])))
             g.add((prop_uri, ex.cardinality, Literal(prop_info["cardinality"])))
         
